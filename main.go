@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	token := ""
+	token := os.Getenv("Token")
 	discord, _ := discordgo.New("Bot " + token)
 
 	discord.AddHandler(ready)
