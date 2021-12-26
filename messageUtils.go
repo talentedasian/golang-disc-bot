@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -44,4 +45,8 @@ func LfdRole(gld *discordgo.Guild) *discordgo.Role {
 
 func FindGuild(s *discordgo.Session, m *discordgo.MessageCreate) (*discordgo.Guild, error) {
 	return s.Guild(m.GuildID)
+}
+
+func IsGiffRole(msg string) bool {
+	return strings.EqualFold("giff me lfd role", msg)
 }

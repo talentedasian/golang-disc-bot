@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -20,6 +21,8 @@ func main() {
 
 	discord.AddHandler(lfdMessage)
 
+	discord.AddHandler(lfdRole)
+
 	opErr := discord.Open()
 	if opErr != nil {
 		fmt.Println("Could not start bot with error: ", opErr)
@@ -37,7 +40,7 @@ func ready(s *discordgo.Session, m *discordgo.Ready) {
 }
 
 func onMessageLfd(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if isBotChat(s, m) {
+	if isBotChat(s, m) && IsGiffRole(m.Content) {
 		return
 	}
 
@@ -64,7 +67,11 @@ func isBotChat(s *discordgo.Session, m *discordgo.MessageCreate) bool {
 }
 
 func lfdMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
-	msg := m.Message.Content
+	if IsGiffRole(m.Content) {
+		return
+	}
+
+	msg := m.Content
 	gld, _ := FindGuild(s, m)
 
 	role := LfdRole(gld)
@@ -75,4 +82,30 @@ func lfdMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if strings.Contains(msg, "lfd") {
 		InviteFriends(s, m, role)
 	}
+}
+
+func lfdRole(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if !IsGiffRole(m.Message.Content) || isBotChat(s, m) {
+		return
+	}
+
+	chId := m.ChannelID
+	gld, gldErr := FindGuild(s, m)
+	if gldErr != nil {
+		log.Println("User did not invoke the command on the guild")
+
+		s.ChannelMessageSend(chId, "Can only be used inside the guild")
+		return
+	}
+
+	rlErr := s.GuildMemberRoleAdd(gld.ID, m.Author.ID, LfdRole(gld).ID)
+	if rlErr != nil {
+		log.Println(`Bot encountered an error adding a role to a user. The bot probably doesn't have
+		the permission to do such an action`)
+
+		s.ChannelMessageSend(chId, "Sorry, I can't add roles")
+		return
+	}
+
+	s.ChannelMessageSend(chId, "Role added")
 }
