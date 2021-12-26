@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	token := "OTI0NTQwOTM5MTQ0Mzk2ODIx.YcgD2Q.YmHJ35hQa79VYFwJ2hTCXr-yDoU"
+	token := ""
 	discord, _ := discordgo.New("Bot " + token)
 
 	discord.AddHandler(ready)
