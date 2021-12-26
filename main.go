@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -14,7 +15,10 @@ func main() {
 	discord, _ := discordgo.New("Bot " + token)
 
 	discord.AddHandler(ready)
+
 	discord.AddHandler(onMessageLfd)
+
+	discord.AddHandler(lfdMessage)
 
 	opErr := discord.Open()
 	if opErr != nil {
@@ -37,24 +41,12 @@ func onMessageLfd(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	c, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		return
-	}
-
-	g, gErr := s.Guild(m.GuildID)
+	gld, gErr := FindGuild(s, m)
 	if gErr != nil {
 		return
 	}
 
-	roles := g.Roles
-
-	var role *discordgo.Role
-	for _, rl := range roles {
-		if rl.Name == "hl2" {
-			role = rl
-		}
-	}
+	role := LfdRole(gld)
 
 	if role == nil {
 		fmt.Println("Role \"hl2\" not found")
@@ -64,11 +56,23 @@ func onMessageLfd(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	mentionedRole := role.Mention()
-	msg := mentionedRole + " G na potangina ang tagal"
-	s.ChannelMessageSend(c.ID, msg)
+	InviteFriends(s, m, role)
 }
 
 func isBotChat(s *discordgo.Session, m *discordgo.MessageCreate) bool {
 	return s.State.User.ID == m.Author.ID
+}
+
+func lfdMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+	msg := m.Message.Content
+	gld, _ := FindGuild(s, m)
+
+	role := LfdRole(gld)
+	if role == nil {
+		return
+	}
+
+	if strings.Contains(msg, "lfd") {
+		InviteFriends(s, m, role)
+	}
 }
