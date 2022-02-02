@@ -1,2 +1,4 @@
 ## used to locate where functions are being called
 .starscope.db
+
+.idea/

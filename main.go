@@ -7,9 +7,12 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
+
+var lastUsed time.Time = time.Now()
 
 func main() {
 	token := os.Getenv("Token")
@@ -22,6 +25,8 @@ func main() {
 	discord.AddHandler(lfdMessage)
 
 	discord.AddHandler(lfdRole)
+
+	discord.AddHandler(tekkenMessage)
 
 	opErr := discord.Open()
 	if opErr != nil {
@@ -67,6 +72,11 @@ func isBotChat(s *discordgo.Session, m *discordgo.MessageCreate) bool {
 }
 
 func lfdMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// doesn't do anything if cooldown is still in effect
+	if time.Now().Before(lastUsed) {
+		return
+	}
+
 	if IsGiffRole(m.Content) {
 		return
 	}
@@ -81,6 +91,9 @@ func lfdMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if strings.Contains(msg, "lfd") {
 		InviteFriends(s, m, role)
+		now := time.Now()
+		d, _ := time.ParseDuration("10m")
+		lastUsed = now.Add(d)
 	}
 }
 
@@ -108,4 +121,31 @@ func lfdRole(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	s.ChannelMessageSend(chId, "Role added")
+}
+
+func tekkenMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// doesn't do anything if cooldown is still in effect
+	if time.Now().Before(lastUsed) {
+		return
+	}
+
+	if IsGiffTekkenRole(m.Content) {
+		return
+	}
+
+	msg := m.Content
+	gld, _ := FindGuild(s, m)
+
+	role := TekkenRole(gld)
+	if role == nil {
+		return
+	}
+
+	if strings.Contains(msg, "tekken") {
+		InviteFriends(s, m, role)
+		now := time.Now()
+		d, _ := time.ParseDuration("10m")
+		lastUsed = now.Add(d)
+	}
+
 }
